@@ -67,3 +67,45 @@ test("GET contracts/:id (403 - not contract owner)", async t => {
 
   t.is(response.statusCode, 403);
 });
+
+test("GET contracts (200 - clients request)", async t => {
+  const response = await got("contracts", {
+    throwHttpErrors: false,
+    prefixUrl: t.context.prefixUrl,
+    headers: {
+      profile_id: 1,
+    },
+  });
+
+  t.is(response.statusCode, 200);
+
+  const body = JSON.parse(response.body);
+  t.is(body.length, 2);
+
+  const expectedContracts = new Set([1, 2]);
+  t.is(
+    body.every(contract => expectedContracts.has(contract.id)),
+    true
+  );
+});
+
+test("GET contracts (200 - contractor request)", async t => {
+  const response = await got("contracts", {
+    throwHttpErrors: false,
+    prefixUrl: t.context.prefixUrl,
+    headers: {
+      profile_id: 5,
+    },
+  });
+
+  t.is(response.statusCode, 200);
+
+  const body = JSON.parse(response.body);
+  t.is(body.length, 1);
+
+  const expectedContracts = new Set([1]);
+  t.is(
+    body.every(contract => expectedContracts.has(contract.id)),
+    true
+  );
+});

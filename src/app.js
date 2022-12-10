@@ -17,7 +17,6 @@ export function configureApp(dbPath) {
 app.use(bodyParser.json());
 
 /**
- * FIX ME!
  * @returns contract by id
  */
 app.get("/contracts/:id", getProfile, async (req, res) => {
@@ -35,4 +34,24 @@ app.get("/contracts/:id", getProfile, async (req, res) => {
   if (!contract) return res.status(404).end();
 
   res.json(contract);
+});
+
+app.get("/contracts", getProfile, async (req, res) => {
+  const { Contract } = req.app.get("models");
+
+  if (req.profile.type === "client") {
+    const contracts = await Contract.findAll({
+      where: { ClientId: req.profile.id },
+    });
+    return res.json(contracts);
+  }
+
+  if (req.profile.type === "contractor") {
+    const contracts = await Contract.findAll({
+      where: { ContractorId: req.profile.id },
+    });
+    return res.json(contracts);
+  }
+
+  throw new Error("Invalid profile type");
 });
