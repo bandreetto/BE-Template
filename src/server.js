@@ -1,4 +1,4 @@
-const { configureApp } = require("./app");
+import { configureApp } from "./app.js";
 
 init();
 

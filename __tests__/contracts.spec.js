@@ -1,19 +1,39 @@
-const test = require("ava");
-const { seed } = require("../scripts/seedFunction");
-const { configureApp } = require("../src/app");
+import test from "ava";
+import listen from "test-listen";
+import got from "got";
+import http from "http";
+import { configureApp } from "../src/app.js";
+import { seed } from "../scripts/seedFunction.js";
 
-const dbPath = "./contracts-test.database.sqlite3";
+const dbPath = ":memory:";
 
-test.before(async () => {
+test.before(async t => {
   const app = configureApp(dbPath);
 
-  app.listen(4000, () =>
-    console.log("Contracts testing server listening on port 4000")
-  );
+  t.context.server = http.createServer(app);
+  t.context.prefixUrl = await listen(t.context.server);
 
   await seed(dbPath);
 });
 
-test("GET contracts/:id (200)", t => {
-  t.fail();
+test.after.always(t => {
+  t.context.server.close();
+});
+
+test("GET contracts/:id (200)", async t => {
+  const response = await got("contracts/1", {
+    prefixUrl: t.context.prefixUrl,
+    headers: {
+      profile_id: 1,
+    },
+  });
+
+  t.is(response.statusCode, 200);
+  t.like(JSON.parse(response.body), {
+    id: 1,
+    terms: "bla bla bla",
+    status: "terminated",
+    ClientId: 1,
+    ContractorId: 5,
+  });
 });

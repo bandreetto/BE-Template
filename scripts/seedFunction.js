@@ -1,6 +1,6 @@
-const { Profile, Contract, Job, initSequelize } = require("../src/model");
+import { Profile, Contract, Job, initSequelize } from "../src/model.js";
 
-async function seed(dbPath) {
+export async function seed(dbPath) {
   initSequelize(dbPath);
 
   // create tables
@@ -226,7 +226,3 @@ async function seed(dbPath) {
     }),
   ]);
 }
-
-module.exports = {
-  seed,
-};

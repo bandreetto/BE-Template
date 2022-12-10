@@ -1,11 +1,11 @@
-const Sequelize = require("sequelize");
+import Sequelize from "sequelize";
 
-class Profile extends Sequelize.Model {}
-class Contract extends Sequelize.Model {}
-class Job extends Sequelize.Model {}
+export class Profile extends Sequelize.Model {}
+export class Contract extends Sequelize.Model {}
+export class Job extends Sequelize.Model {}
 
 let sequelize;
-function initSequelize(dbPath) {
+export function initSequelize(dbPath) {
   sequelize = new Sequelize({
     dialect: "sqlite",
     storage: dbPath || "./database.sqlite3",
@@ -87,11 +87,3 @@ function initSequelize(dbPath) {
 
   return sequelize;
 }
-
-module.exports = {
-  sequelize,
-  initSequelize,
-  Profile,
-  Contract,
-  Job,
-};
