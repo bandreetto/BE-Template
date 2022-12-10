@@ -1,12 +1,18 @@
 const express = require("express");
 const bodyParser = require("body-parser");
-const { sequelize } = require("./model");
+const { initSequelize } = require("./model");
 const { getProfile } = require("./middleware/getProfile");
 const app = express();
 
+function configureApp(dbPath) {
+  const sequelize = initSequelize(dbPath);
+  app.set("sequelize", sequelize);
+  app.set("models", sequelize.models);
+
+  return app;
+}
+
 app.use(bodyParser.json());
-app.set("sequelize", sequelize);
-app.set("models", sequelize.models);
 
 /**
  * FIX ME!
@@ -22,4 +28,4 @@ app.get("/contracts/:id", getProfile, async (req, res) => {
   res.json(contract);
 });
 
-module.exports = app;
+module.exports = { app, configureApp };

@@ -1,9 +1,10 @@
-const app = require("./app");
+const { configureApp } = require("./app");
 
 init();
 
 async function init() {
   try {
+    const app = configureApp();
     app.listen(3001, () => {
       console.log("Express App Listening on Port 3001");
     });
