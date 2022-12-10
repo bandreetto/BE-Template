@@ -21,7 +21,8 @@ test.after.always(t => {
 });
 
 test("GET contracts/:id (200)", async t => {
-  const response = await got("contracts/1", {
+  let response = await got("contracts/1", {
+    throwHttpErrors: false,
     prefixUrl: t.context.prefixUrl,
     headers: {
       profile_id: 1,
@@ -36,4 +37,33 @@ test("GET contracts/:id (200)", async t => {
     ClientId: 1,
     ContractorId: 5,
   });
+
+  response = await got("contracts/1", {
+    throwHttpErrors: false,
+    prefixUrl: t.context.prefixUrl,
+    headers: {
+      profile_id: 5,
+    },
+  });
+
+  t.is(response.statusCode, 200);
+  t.like(JSON.parse(response.body), {
+    id: 1,
+    terms: "bla bla bla",
+    status: "terminated",
+    ClientId: 1,
+    ContractorId: 5,
+  });
+});
+
+test("GET contracts/:id (403 - not contract owner)", async t => {
+  const response = await got("contracts/1", {
+    throwHttpErrors: false,
+    prefixUrl: t.context.prefixUrl,
+    headers: {
+      profile_id: 2,
+    },
+  });
+
+  t.is(response.statusCode, 403);
 });

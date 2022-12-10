@@ -25,6 +25,13 @@ app.get("/contracts/:id", getProfile, async (req, res) => {
 
   const { Contract } = req.app.get("models");
   const contract = await Contract.findOne({ where: { id } });
+
+  if (
+    req.profile.id !== contract.ClientId &&
+    req.profile.id !== contract.ContractorId
+  )
+    return res.status(403).end();
+
   if (!contract) return res.status(404).end();
 
   res.json(contract);
