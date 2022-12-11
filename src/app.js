@@ -4,6 +4,7 @@ import { initSequelize } from "./model.js";
 import { contractsRouter } from "./contracts/routes.js";
 import { jobsRouter } from "./jobs/routes.js";
 import { profilesRouter } from "./profiles/routes.js";
+import { balancesRouter } from "./balances/routes.js";
 
 const app = express();
 
@@ -20,3 +21,4 @@ app.use(bodyParser.json());
 app.use("/contracts", contractsRouter);
 app.use("/jobs", jobsRouter);
 app.use("/profiles", profilesRouter);
+app.use("/balances", balancesRouter);

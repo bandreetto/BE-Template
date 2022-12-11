@@ -47,6 +47,7 @@ jobsRouter.post("/:id/pay", getProfile, async (req, res) => {
   const { LedgerEntry } = req.app.get("models");
   const entry = await LedgerEntry.create({
     amount: job.price,
+    type: "payment",
     status: "not-validated",
     ContractorId: job.Contract.ContractorId,
     ClientId: job.Contract.ClientId,
@@ -58,6 +59,7 @@ jobsRouter.post("/:id/pay", getProfile, async (req, res) => {
     if (entry.status === "validated") break;
     if (entry.cancelReason === "insufficient-balance")
       return res.status(400).send("Insufficient balance");
+    if (entry.status === "canceled") throw new Error("Payment failed");
   }
 
   await job.update({

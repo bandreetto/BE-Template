@@ -13,7 +13,7 @@ test.before(async t => {
   t.context.server = http.createServer(app);
   t.context.got = got.extend({ prefixUrl: await listen(t.context.server) });
 
-  await seed(dbPath);
+  await seed();
 });
 
 test.after.always(t => {

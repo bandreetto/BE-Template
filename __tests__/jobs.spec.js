@@ -4,26 +4,21 @@ import got from "got";
 import http from "http";
 import { configureApp } from "../src/app.js";
 import { seed } from "../scripts/seedFunction.js";
-import {
-  startLedgerEntryTasks,
-  stopLedgerEntryTasks,
-} from "../src/ledger-entry/tasks.js";
+import { startLedgerEntryTasks } from "../src/ledger-entry/tasks/index.js";
 
 const dbPath = ":memory:";
 
 test.before(async t => {
   const app = configureApp(dbPath);
 
+  t.context.app = app;
   t.context.server = http.createServer(app);
   t.context.got = got.extend({ prefixUrl: await listen(t.context.server) });
 
   await seed();
-
-  startLedgerEntryTasks(app);
 });
 
 test.after.always(t => {
-  stopLedgerEntryTasks();
   t.context.server.close();
 });
 
@@ -97,6 +92,7 @@ test.serial("POST /jobs/:job_id/pay (200)", async t => {
     })
     .json();
 
+  const stopTasks = startLedgerEntryTasks(t.context.app);
   const paidJobs = await Promise.all(
     unpaidJobs.map(job =>
       t.context.got
@@ -108,6 +104,7 @@ test.serial("POST /jobs/:job_id/pay (200)", async t => {
         .json()
     )
   );
+  stopTasks();
 
   paidJobs.forEach(job => {
     t.like(job, { paid: true });
@@ -150,13 +147,15 @@ test.serial("POST /jobs/:job_id/pay (200)", async t => {
   );
 });
 
-test("POST /jobs/:job_id/pay (400 - Insufficient balance)", async t => {
+test.serial("POST /jobs/:job_id/pay (400 - Insufficient balance)", async t => {
+  const stopTasks = startLedgerEntryTasks(t.context.app);
   const response = await t.context.got.post(`jobs/100/pay`, {
     throwHttpErrors: false,
     headers: {
       profile_id: 4,
     },
   });
+  stopTasks();
 
   t.is(response.statusCode, 400);
   t.is(response.body, "Insufficient balance");

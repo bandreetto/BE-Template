@@ -86,12 +86,16 @@ export function initSequelize(dbPath) {
         type: Sequelize.DECIMAL(12, 2),
         allowNull: false,
       },
+      type: {
+        type: Sequelize.ENUM("payment", "deposit"),
+        allowNull: false,
+      },
       status: {
         type: Sequelize.ENUM("not-validated", "validated", "canceled"),
         allowNull: false,
       },
       cancelReason: {
-        type: Sequelize.ENUM("insufficient-balance"),
+        type: Sequelize.ENUM("insufficient-balance", "limit-exceeded"),
       },
     },
     {

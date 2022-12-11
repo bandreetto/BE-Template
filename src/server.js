@@ -1,16 +1,13 @@
 import { configureApp } from "./app.js";
-import {
-  startLedgerEntryTasks,
-  stopLedgerEntryTasks,
-} from "./ledger-entry/tasks.js";
+import { startLedgerEntryTasks } from "./ledger-entry/tasks/index.js";
 
 init();
 
 async function init() {
   try {
     const app = configureApp();
-    startLedgerEntryTasks(app);
-    app.on("close", stopLedgerEntryTasks);
+    const stopTasks = startLedgerEntryTasks(app);
+    app.on("close", stopTasks);
     app.listen(3001, () => {
       console.log("Express App Listening on Port 3001");
     });
