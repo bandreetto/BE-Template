@@ -5,6 +5,7 @@ import { contractsRouter } from "./contracts/routes.js";
 import { jobsRouter } from "./jobs/routes.js";
 import { profilesRouter } from "./profiles/routes.js";
 import { balancesRouter } from "./balances/routes.js";
+import { adminRouter } from "./admin/routes.js";
 
 const app = express();
 
@@ -22,3 +23,4 @@ app.use("/contracts", contractsRouter);
 app.use("/jobs", jobsRouter);
 app.use("/profiles", profilesRouter);
 app.use("/balances", balancesRouter);
+app.use("/admin", adminRouter);
