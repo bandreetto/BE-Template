@@ -1,12 +1,11 @@
-import { Profile, Contract, Job, initSequelize } from "../src/model.js";
+import { Profile, Contract, Job, LedgerEntry } from "../src/model.js";
 
-export async function seed(dbPath) {
-  initSequelize(dbPath);
-
+export async function seed() {
   // create tables
   await Profile.sync({ force: true });
   await Contract.sync({ force: true });
   await Job.sync({ force: true });
+  await LedgerEntry.sync({ force: true });
   //insert data
   await Promise.all([
     Profile.create({
@@ -223,6 +222,12 @@ export async function seed(dbPath) {
       paid: true,
       paymentDate: "2020-08-14T23:11:26.737Z",
       ContractId: 3,
+    }),
+    Job.create({
+      id: 100,
+      description: "Super expensive job",
+      price: 10000000,
+      ContractId: 9,
     }),
   ]);
 }

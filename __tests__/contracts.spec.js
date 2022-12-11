@@ -11,7 +11,7 @@ test.before(async t => {
   const app = configureApp(dbPath);
 
   t.context.server = http.createServer(app);
-  t.context.prefixUrl = await listen(t.context.server);
+  t.context.got = got.extend({ prefixUrl: await listen(t.context.server) });
 
   await seed(dbPath);
 });
@@ -21,9 +21,8 @@ test.after.always(t => {
 });
 
 test("GET contracts/:id (200)", async t => {
-  let response = await got("contracts/1", {
+  let response = await t.context.got("contracts/1", {
     throwHttpErrors: false,
-    prefixUrl: t.context.prefixUrl,
     headers: {
       profile_id: 1,
     },
@@ -38,9 +37,8 @@ test("GET contracts/:id (200)", async t => {
     ContractorId: 5,
   });
 
-  response = await got("contracts/1", {
+  response = await t.context.got("contracts/1", {
     throwHttpErrors: false,
-    prefixUrl: t.context.prefixUrl,
     headers: {
       profile_id: 5,
     },
@@ -57,9 +55,8 @@ test("GET contracts/:id (200)", async t => {
 });
 
 test("GET contracts/:id (403 - not contract owner)", async t => {
-  const response = await got("contracts/1", {
+  const response = await t.context.got("contracts/1", {
     throwHttpErrors: false,
-    prefixUrl: t.context.prefixUrl,
     headers: {
       profile_id: 2,
     },
@@ -69,9 +66,8 @@ test("GET contracts/:id (403 - not contract owner)", async t => {
 });
 
 test("GET contracts (200 - clients request)", async t => {
-  const response = await got("contracts", {
+  const response = await t.context.got("contracts", {
     throwHttpErrors: false,
-    prefixUrl: t.context.prefixUrl,
     headers: {
       profile_id: 1,
     },
@@ -90,9 +86,8 @@ test("GET contracts (200 - clients request)", async t => {
 });
 
 test("GET contracts (200 - contractor request)", async t => {
-  const response = await got("contracts", {
+  const response = await t.context.got("contracts", {
     throwHttpErrors: false,
-    prefixUrl: t.context.prefixUrl,
     headers: {
       profile_id: 5,
     },

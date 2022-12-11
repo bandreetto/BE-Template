@@ -4,6 +4,10 @@ import got from "got";
 import http from "http";
 import { configureApp } from "../src/app.js";
 import { seed } from "../scripts/seedFunction.js";
+import {
+  startLedgerEntryTasks,
+  stopLedgerEntryTasks,
+} from "../src/ledger-entry/tasks.js";
 
 const dbPath = ":memory:";
 
@@ -11,19 +15,21 @@ test.before(async t => {
   const app = configureApp(dbPath);
 
   t.context.server = http.createServer(app);
-  t.context.prefixUrl = await listen(t.context.server);
+  t.context.got = got.extend({ prefixUrl: await listen(t.context.server) });
 
-  await seed(dbPath);
+  await seed();
+
+  startLedgerEntryTasks(app);
 });
 
 test.after.always(t => {
+  stopLedgerEntryTasks();
   t.context.server.close();
 });
 
 test("GET /jobs/unpaid (200 - client request)", async t => {
-  const response = await got("jobs/unpaid", {
+  const response = await t.context.got("jobs/unpaid", {
     throwHttpErrors: false,
-    prefixUrl: t.context.prefixUrl,
     headers: {
       profile_id: 1,
     },
@@ -43,9 +49,8 @@ test("GET /jobs/unpaid (200 - client request)", async t => {
 });
 
 test("GET /jobs/unpaid (200 - contractor request)", async t => {
-  const response = await got("jobs/unpaid", {
+  const response = await t.context.got("jobs/unpaid", {
     throwHttpErrors: false,
-    prefixUrl: t.context.prefixUrl,
     headers: {
       profile_id: 6,
     },
@@ -56,4 +61,125 @@ test("GET /jobs/unpaid (200 - contractor request)", async t => {
   const body = JSON.parse(response.body);
   t.is(body.length, 2);
   body.forEach(job => t.like(job, { paid: null, paymentDate: null }));
+});
+
+test.serial("POST /jobs/:job_id/pay (200)", async t => {
+  const unpaidJobs = await t.context
+    .got("jobs/unpaid", {
+      headers: {
+        profile_id: 3,
+      },
+    })
+    .json();
+
+  const unpaidContractors = await Promise.all(
+    unpaidJobs.map(async job => {
+      const contract = await t.context
+        .got(`contracts/${job.ContractId}`, {
+          headers: { profile_id: 3 },
+        })
+        .json();
+      return t.context
+        .got(`profiles/${contract.ContractorId}`, {
+          headers: {
+            profile_id: contract.ContractorId,
+          },
+        })
+        .json();
+    })
+  );
+
+  const richClient = await t.context
+    .got("profiles/3", {
+      headers: {
+        profile_id: 3,
+      },
+    })
+    .json();
+
+  const paidJobs = await Promise.all(
+    unpaidJobs.map(job =>
+      t.context.got
+        .post(`jobs/${job.id}/pay`, {
+          headers: {
+            profile_id: 3,
+          },
+        })
+        .json()
+    )
+  );
+
+  paidJobs.forEach(job => {
+    t.like(job, { paid: true });
+    const paymentDate = new Date(job.paymentDate);
+    t.true(paymentDate instanceof Date && !isNaN(paymentDate));
+  });
+
+  await Promise.all(
+    paidJobs.map(async job => {
+      const contract = await t.context
+        .got(`contracts/${job.ContractId}`, {
+          headers: { profile_id: 3 },
+        })
+        .json();
+      const contractor = await t.context
+        .got(`profiles/${contract.ContractorId}`, {
+          headers: {
+            profile_id: contract.ContractorId,
+          },
+        })
+        .json();
+      const unpaidContractor = unpaidContractors.find(
+        unpaidContractor => unpaidContractor.id === contractor.id
+      );
+      t.is(contractor.balance, unpaidContractor.balance + job.price);
+    })
+  );
+
+  const poorClient = await t.context
+    .got("profiles/3", {
+      headers: {
+        profile_id: 3,
+      },
+    })
+    .json();
+
+  t.is(
+    richClient.balance - poorClient.balance,
+    unpaidJobs.reduce((acc, curr) => acc + curr.price, 0)
+  );
+});
+
+test("POST /jobs/:job_id/pay (400 - Insufficient balance)", async t => {
+  const response = await t.context.got.post(`jobs/100/pay`, {
+    throwHttpErrors: false,
+    headers: {
+      profile_id: 4,
+    },
+  });
+
+  t.is(response.statusCode, 400);
+  t.is(response.body, "Insufficient balance");
+});
+
+test("POST /jobs/:job_id/pay (403 - Not a client)", async t => {
+  const response = await t.context.got.post(`jobs/1/pay`, {
+    throwHttpErrors: false,
+    headers: {
+      profile_id: 5,
+    },
+  });
+
+  t.is(response.statusCode, 403);
+});
+
+test("POST /jobs/:job_id/pay (403 - Client doesn't own job's contract')", async t => {
+  const response = await t.context.got.post(`jobs/1/pay`, {
+    throwHttpErrors: false,
+    headers: {
+      profile_id: 4,
+    },
+  });
+
+  t.is(response.statusCode, 403);
 });
